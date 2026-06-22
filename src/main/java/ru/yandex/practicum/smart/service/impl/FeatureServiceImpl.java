@@ -12,6 +12,10 @@ import ru.yandex.practicum.smart.service.FeatureService;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Реализация сервиса для управления функциями (features) приложения.
+ * Позволяет создавать и сохранять новые функции в базе данных.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -19,6 +23,12 @@ public class FeatureServiceImpl implements FeatureService {
 
     private final FeatureRepository featureRepository;
 
+    /**
+     * Сохраняет новую функцию в базе данных.
+     *
+     * @param request данные функции (имя)
+     * @return сохранённая функция с ID и датой создания
+     */
     public FeatureResponse saveFeature(FeatureRequest request) {
         Feature feature = new Feature();
         feature.setId(UUID.randomUUID());

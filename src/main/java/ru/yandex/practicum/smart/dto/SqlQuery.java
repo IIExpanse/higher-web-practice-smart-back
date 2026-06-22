@@ -1,10 +1,10 @@
 package ru.yandex.practicum.smart.dto;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 @Getter
-@RequiredArgsConstructor
+@Setter
 public class SqlQuery {
-    private final String query;
+    private String query;
 }

@@ -14,6 +14,10 @@ import ru.yandex.practicum.smart.dto.OllamaResponse;
 
 import java.util.List;
 
+/**
+ * Клиент для взаимодействия с Ollama API.
+ * Отправляет запросы к локальной модели LLM и получает ответы.
+ */
 @Component
 @RequiredArgsConstructor
 public class OllamaClient {
@@ -24,6 +28,12 @@ public class OllamaClient {
 
     private final RestTemplate restTemplate;
 
+    /**
+     * Отправляет список сообщений в Ollama API и получает ответ.
+     *
+     * @param messages список сообщений для отправки
+     * @return ответ от Ollama API
+     */
     public OllamaResponse sendMessage(List<OllamaMessage> messages) {
         OllamaRequest request = new OllamaRequest(
                 ollamaLlmModel,

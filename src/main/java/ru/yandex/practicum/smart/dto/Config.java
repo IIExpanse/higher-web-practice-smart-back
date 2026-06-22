@@ -1,13 +1,13 @@
 package ru.yandex.practicum.smart.dto;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import javax.validation.constraints.NotNull;
 
 @Getter
-@RequiredArgsConstructor
+@Setter
 public class Config {
     @NotNull
-    private final ApiConfig config;
+    private ApiConfig config;
 }

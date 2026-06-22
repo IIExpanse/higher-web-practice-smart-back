@@ -23,10 +23,6 @@ public class DmlQuery {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "feature_id", nullable = false)
-    private Feature feature;
-
-    @ManyToOne
     @JoinColumn(name = "api_id", nullable = false)
     private Api api;
 

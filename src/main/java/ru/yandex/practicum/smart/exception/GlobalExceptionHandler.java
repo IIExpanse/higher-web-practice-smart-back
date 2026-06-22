@@ -1,6 +1,5 @@
 package ru.yandex.practicum.smart.exception;
 
-import lombok.Data;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -18,7 +17,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ApiError(e.getMessage(), null), e.getHttpStatus());
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, OllamaResponseParsingException.class})
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidationException(MethodArgumentNotValidException e) {
         List<String> errors = e.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())

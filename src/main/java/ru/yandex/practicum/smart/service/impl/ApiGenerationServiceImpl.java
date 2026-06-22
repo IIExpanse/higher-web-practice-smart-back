@@ -33,6 +33,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Реализация сервиса для генерации API-конфигураций на основе запросов пользователя.
+ * Создаёт конфигурации REST-эндпоинтов на основе описаний от LLM и регистрирует динамические маршруты.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,6 +50,14 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
     private final ApiResultRepository apiResultRepository;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Генерирует API-конфигурацию на основе запроса.
+     * Извлекает конфигурацию из последнего сообщения чата, сохраняет API, параметры и результаты,
+     * а также регистрирует динамический маршрут.
+     *
+     * @param request запрос на генерацию API с идентификаторами чата и функции
+     * @return сгенерированная конфигурация API
+     */
     @Override
     @Transactional
     public ApiGenerationResponse generate(ApiGenerationRequest request) {
@@ -67,7 +79,7 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
         api.setPath(config.getUrl().strip());
         api.setCreatedAt(Instant.now());
 
-        apiRepository.save(api);
+        api = apiRepository.save(api);
         saveApiParameters(api, config);
         saveApiResults(api, config);
         log.debug("Finished saving api data for feature={} and chat={}", request.getFeatureId(), request.getChatId());
@@ -89,6 +101,12 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
         );
     }
 
+    /**
+     * Извлекает API-конфигурацию из последнего сообщения чата.
+     *
+     * @param request запрос на генерацию API
+     * @return API-конфигурация из сообщения
+     */
     private ApiConfig getConfig(ApiGenerationRequest request) {
         Chat chat = chatRepository.findById(request.getChatId()).orElse(null);
         if (chat == null) {
@@ -108,6 +126,12 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
         return config;
     }
 
+    /**
+     * Сохраняет параметры API в базе данных.
+     *
+     * @param api       API, для которого сохраняются параметры
+     * @param config    API-конфигурация с параметрами
+     */
     private void saveApiParameters(Api api, ApiConfig config) {
         if (config.getParameters() == null || config.getParameters().isEmpty()) {
             return;
@@ -128,6 +152,12 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
         apiParameterRepository.saveAll(apiParameters);
     }
 
+    /**
+     * Сохраняет результаты API в базе данных.
+     *
+     * @param api       API, для которого сохраняются результаты
+     * @param config    API-конфигурация с результатами
+     */
     private void saveApiResults(Api api, ApiConfig config) {
         if (config.getResults() == null || config.getResults().isEmpty()) {
             return;
@@ -148,6 +178,12 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
         apiResultRepository.saveAll(apiResults);
     }
 
+    /**
+     * Проверяет, является ли метод HTTP-методом.
+     *
+     * @param httpMethod строковое представление HTTP-метода
+     * @return true, если метод валиден, иначе false
+     */
     private boolean isValidHttpMethod(String httpMethod) {
         try {
             RequestMethod.valueOf(httpMethod.strip().toUpperCase());
@@ -159,6 +195,12 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
         return true;
     }
 
+    /**
+     * Парсит JSON-строку в API-конфигурацию.
+     *
+     * @param extractedContent JSON-строка с конфигурацией
+     * @return Optional с API-конфигурацией или пустой Optional
+     */
     private Optional<ApiConfig> parseConfig(String extractedContent) {
         try {
             ApiConfig config = objectMapper.readValue(extractedContent, Config.class).getConfig();

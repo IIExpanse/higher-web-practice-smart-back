@@ -57,5 +57,5 @@ CREATE TABLE IF NOT EXISTS smart_backend.dml_query (
     api_id UUID REFERENCES smart_backend.api(id) NOT NULL,
     query TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL,
-    Constraint dml_unique_api Unique(api_Id)
+    CONSTRAINT dml_unique_api Unique(api_Id)
 );

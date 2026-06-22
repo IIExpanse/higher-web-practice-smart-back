@@ -14,6 +14,10 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 
+/**
+ * Сервис для управления динамическими маршрутами.
+ * Регистрирует и unregister URL-маршруты во время выполнения приложения.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,7 +27,8 @@ public class DynamicRouteService {
     private final ApiRepository apiRepository;
 
     /**
-     * Метод для инициализации динамических апи после перезапуска приложения.
+     * Метод для инициализации динамических API после перезапуска приложения.
+     * Регистрирует все API, сохранённые в базе данных.
      */
     @PostConstruct
     public void init() {
@@ -38,6 +43,13 @@ public class DynamicRouteService {
         log.info("Finished startup dynamic route initialization");
     }
 
+    /**
+     * Регистрирует новый URL-маршрут.
+     *
+     * @param path       путь маршрута
+     * @param httpMethod HTTP-метод маршрута
+     * @throws NoSuchMethodException если метод не найден
+     */
     public void registerUrl(String path, RequestMethod httpMethod) throws NoSuchMethodException {
         RequestMappingInfo requestMappingInfo = RequestMappingInfo
                 .paths(path)
@@ -51,6 +63,12 @@ public class DynamicRouteService {
         handlerMapping.registerMapping(requestMappingInfo, dynamicHandlerController, targetMethod);
     }
 
+    /**
+     * Отменяет регистрацию URL-маршрута.
+     *
+     * @param path       путь маршрута
+     * @param httpMethod HTTP-метод маршрута
+     */
     public void unregisterUrl(String path, RequestMethod httpMethod) {
         RequestMappingInfo requestMappingInfo = RequestMappingInfo
                 .paths(path)
@@ -60,4 +78,3 @@ public class DynamicRouteService {
         handlerMapping.unregisterMapping(requestMappingInfo);
     }
 }
-

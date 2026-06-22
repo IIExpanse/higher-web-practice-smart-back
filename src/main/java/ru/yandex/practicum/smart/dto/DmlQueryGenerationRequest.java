@@ -1,16 +1,16 @@
 package ru.yandex.practicum.smart.dto;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 import javax.validation.constraints.NotNull;
 import java.util.UUID;
 
 @Getter
-@RequiredArgsConstructor
+@Setter
 public class DmlQueryGenerationRequest {
     @NotNull
-    private final UUID chatId;
+    private UUID chatId;
     @NotNull
-    private final UUID apiId;
+    private UUID apiId;
 }

@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.smart.exception.HttpClientException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,13 +20,6 @@ public class DynamicJdbcDao {
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcTemplate parameterJdbcTemplate;
 
-    /**
-     * Выполняет динамический выборку из БД.
-     *
-     * @param outputFields Список полей, которые нужно вернуть
-     * @param inputFilters Карта фильтров (Имя_колонки -> Значение)
-     * @return Список строк, где каждая строка — это Map<String, String>
-     */
     public List<Map<String, String>> executeDynamicQuery(
             String query,
             List<String> outputFields,
@@ -42,8 +36,15 @@ public class DynamicJdbcDao {
     }
 
     public void executeModifyingQuery(String sql) {
-        log.debug("Executing modifying query");
-        jdbcTemplate.execute(sql);
+        try {
+            log.debug("Executing modifying query");
+            jdbcTemplate.execute(sql);
+
+        } catch (Exception e) {
+            log.error("Error executing modifying query", e);
+            throw new HttpClientException("There was an error executing query, check if it is valid");
+        }
+
     }
 
     private Map<String, String> convertRowValuesToString(Map<String, Object> row, Set<String> outputFields) {

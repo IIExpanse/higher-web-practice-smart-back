@@ -24,12 +24,15 @@ import ru.yandex.practicum.smart.repository.DmlQueryRepository;
 import ru.yandex.practicum.smart.repository.FeatureRepository;
 import ru.yandex.practicum.smart.repository.MessageRepository;
 import ru.yandex.practicum.smart.service.DbQueryGenerationService;
-import ru.yandex.practicum.smart.validator.SqlValidator;
 
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Реализация сервиса для генерации SQL-запросов (DDL и DML).
+ * Извлекает SQL из сообщений чата и сохраняет их в базе данных.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,10 +43,14 @@ public class DbQueryGenerationServiceImpl implements DbQueryGenerationService {
     private final MessageRepository messageRepository;
     private final DdlQueryRepository ddlQueryRepository;
     private final DmlQueryRepository dmlQueryRepository;
-    private final SqlValidator sqlValidator;
     private final ObjectMapper objectMapper;
     private final DynamicJdbcDao dynamicJdbcDao;
 
+    /**
+     * Генерирует и сохраняет DML-запрос.
+     *
+     * @param request запрос на генерацию DML-запроса
+     */
     @Override
     public void generateDmlQuery(DmlQueryGenerationRequest request) {
         Chat chat = chatRepository.findById(request.getChatId()).orElse(null);
@@ -65,6 +72,11 @@ public class DbQueryGenerationServiceImpl implements DbQueryGenerationService {
         dmlQueryRepository.save(dmlQuery);
     }
 
+    /**
+     * Генерирует и сохраняет DDL-запрос, а также выполняет его.
+     *
+     * @param request запрос на генерацию DDL-запроса
+     */
     @Override
     @Transactional
     public void generateDdlQuery(DdlQueryGenerationRequest request) {
@@ -90,6 +102,12 @@ public class DbQueryGenerationServiceImpl implements DbQueryGenerationService {
         log.debug("Successfully executed modifying query {}", sqlQuery.getQuery());
     }
 
+    /**
+     * Извлекает SQL-запрос из последнего сообщения чата.
+     *
+     * @param chat чат, из которого извлекается запрос
+     * @return SQL-запрос из сообщения
+     */
     private SqlQuery getSqlQuery(Chat chat) {
         Message message = messageRepository.findFirstByChat_IdAndExtractedContentNotNullOrderByNumberDesc(chat.getId())
                 .orElse(null);
@@ -101,13 +119,15 @@ public class DbQueryGenerationServiceImpl implements DbQueryGenerationService {
             throw new HttpClientException(String.format("Extracted content from last message with id=%s " +
                     "with chatId=%s cannot ba parsed as SqlQuery", message.getId(), message.getChat().getId()));
         }
-        if (!sqlValidator.isValidSql(sqlQuery.getQuery())) {
-            throw new HttpClientException("Sql query from extracted content is not valid sql.");
-        }
         return sqlQuery;
     }
 
-
+    /**
+     * Парсит JSON-строку в SQL-запрос.
+     *
+     * @param extractedContent JSON-строка с SQL-запросом
+     * @return Optional с SQL-запросом или пустой Optional
+     */
     private Optional<SqlQuery> parseSqlQuery(String extractedContent) {
         try {
             SqlQuery config = objectMapper.readValue(extractedContent, SqlQuery.class);

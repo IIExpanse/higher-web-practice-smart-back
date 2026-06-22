@@ -1,20 +1,20 @@
 package ru.yandex.practicum.smart.dto;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.hibernate.validator.constraints.URL;
 
 import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 @Getter
-@RequiredArgsConstructor
+@Setter
 public class ApiConfig {
     @NotBlank
-    private final String method;
+    private String method;
     @NotBlank
     @URL
-    private final String url;
-    private final List<String> parameters;
-    private final List<String> results;
+    private String url;
+    private List<String> parameters;
+    private List<String> results;
 }

@@ -20,6 +20,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Реализация сервиса для обработки динамических HTTP-запросов.
+ * Выполняет DML-запросы на основе конфигурации API, переданной в параметрах URL.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,6 +34,16 @@ public class DynamicRequestServiceImpl implements DynamicRequestService {
     private final ApiParameterRepository apiParameterRepository;
     private final ApiResultRepository apiResultRepository;
 
+    /**
+     * Обрабатывает динамический HTTP-запрос.
+     * Находит соответствующий API и DML-запрос по пути и методу,
+     * фильтрует параметры, выполняет запрос и возвращает результат.
+     *
+     * @param path    путь запроса
+     * @param method  HTTP-метод запроса
+     * @param parameters параметры запроса
+     * @return список результатов выполнения запроса
+     */
     @Override
     public List<Map<String, String>> handleDynamicRequest(String path, String method, Map<String, String> parameters) {
         log.debug("Executing dynamic query for path={} and method={}", path, method);
