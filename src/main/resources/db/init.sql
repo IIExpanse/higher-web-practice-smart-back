@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS smart_backend.chat (
 
 CREATE TABLE IF NOT EXISTS smart_backend.message (
     id UUID PRIMARY KEY,
-    chat_id uuid REFERENCES smart_backend.chat(id) NOT NULL,
+    chat_id UUID REFERENCES smart_backend.chat(id) NOT NULL,
     role varchar (36) NOT NULL,
     number integer NOT NULL,
     content TEXT NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS smart_backend.feature (
 
 CREATE TABLE IF NOT EXISTS smart_backend.api (
     id UUID PRIMARY KEY,
-    feature_id uuid REFERENCES smart_backend.feature(id) NOT NULL,
+    feature_id UUID REFERENCES smart_backend.feature(id) NOT NULL,
     method VARCHAR(10) NOT NULL,
     path VARCHAR(100) NOT NULL,
     created_at TIMESTAMP NOT NULL
@@ -54,7 +54,6 @@ CREATE TABLE IF NOT EXISTS smart_backend.ddl_query (
 
 CREATE TABLE IF NOT EXISTS smart_backend.dml_query (
     id UUID PRIMARY KEY,
-    feature_id UUID REFERENCES smart_backend.feature(id) NOT NULL,
     api_id UUID REFERENCES smart_backend.api(id) NOT NULL,
     query TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL,

@@ -8,9 +8,9 @@ import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
-public class ApiGenerationRequest {
-    @NotNull
-    private final UUID chatId;
+public class DdlQueryGenerationRequest {
     @NotNull
     private final UUID featureId;
+    @NotNull
+    private final UUID chatId;
 }

@@ -2,7 +2,6 @@ package ru.yandex.practicum.smart.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -23,6 +22,9 @@ public class DynamicRouteService {
     private final DynamicHandlerController dynamicHandlerController;
     private final ApiRepository apiRepository;
 
+    /**
+     * Метод для инициализации динамических апи после перезапуска приложения.
+     */
     @PostConstruct
     public void init() {
         apiRepository.findAll().forEach(api -> {
@@ -33,22 +35,19 @@ public class DynamicRouteService {
                 log.warn("Failed to register api with path {} and method {}", api.getPath(), api.getMethod());
             }
         });
+        log.info("Finished startup dynamic route initialization");
     }
 
-    // Register a new path at runtime
     public void registerUrl(String path, RequestMethod httpMethod) throws NoSuchMethodException {
-        // 1. Define the routing conditions
         RequestMappingInfo requestMappingInfo = RequestMappingInfo
                 .paths(path)
                 .methods(httpMethod)
                 .produces(MediaType.APPLICATION_JSON_VALUE)
                 .build();
 
-        // 2. Fetch the handling method from our target controller via reflection
         Method targetMethod = DynamicHandlerController.class
                 .getDeclaredMethod("handleDynamicRequest", HttpServletRequest.class);
 
-        // 3. Register the mapping into Spring's active registry
         handlerMapping.registerMapping(requestMappingInfo, dynamicHandlerController, targetMethod);
     }
 

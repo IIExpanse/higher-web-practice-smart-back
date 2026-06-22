@@ -1,13 +1,15 @@
 package ru.yandex.practicum.smart.dto;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Data
+@Getter
+@RequiredArgsConstructor
 public class FeatureResponse {
-    private UUID id;
-    private String name;
-    private Instant createdAt;
+    private final UUID featureId;
+    private final String name;
+    private final Instant createdAt;
 }

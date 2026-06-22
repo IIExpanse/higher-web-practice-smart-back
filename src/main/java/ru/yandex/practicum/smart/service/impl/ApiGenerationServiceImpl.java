@@ -1,38 +1,64 @@
 package ru.yandex.practicum.smart.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMethod;
 import ru.yandex.practicum.smart.dto.ApiConfig;
 import ru.yandex.practicum.smart.dto.ApiGenerationRequest;
+import ru.yandex.practicum.smart.dto.ApiGenerationResponse;
+import ru.yandex.practicum.smart.dto.Config;
 import ru.yandex.practicum.smart.exception.HttpClientException;
 import ru.yandex.practicum.smart.model.entity.Api;
+import ru.yandex.practicum.smart.model.entity.ApiParameter;
+import ru.yandex.practicum.smart.model.entity.ApiResult;
+import ru.yandex.practicum.smart.model.entity.Chat;
 import ru.yandex.practicum.smart.model.entity.Feature;
+import ru.yandex.practicum.smart.model.entity.Message;
+import ru.yandex.practicum.smart.repository.ApiParameterRepository;
 import ru.yandex.practicum.smart.repository.ApiRepository;
+import ru.yandex.practicum.smart.repository.ApiResultRepository;
+import ru.yandex.practicum.smart.repository.ChatRepository;
 import ru.yandex.practicum.smart.repository.FeatureRepository;
+import ru.yandex.practicum.smart.repository.MessageRepository;
 import ru.yandex.practicum.smart.service.ApiGenerationService;
 import ru.yandex.practicum.smart.service.DynamicRouteService;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ApiGenerationServiceImpl implements ApiGenerationService {
+    private final ChatRepository chatRepository;
+    private final MessageRepository messageRepository;
     private final FeatureRepository featureRepository;
     private final DynamicRouteService dynamicRouteService;
     private final ApiRepository apiRepository;
+    private final ApiParameterRepository apiParameterRepository;
+    private final ApiResultRepository apiResultRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
-    public void generate(ApiGenerationRequest request) {
-        ApiConfig config = request.getConfig();
+    @Transactional
+    public ApiGenerationResponse generate(ApiGenerationRequest request) {
+        log.debug("Starting api generation for feature={} and chat={}", request.getFeatureId(), request.getChatId());
 
-        if (!isValidHttpMethod(config.getMethod())) {
-            throw new HttpClientException("Invalid HTTP Method");
-        }
         Feature feature = featureRepository.findById(request.getFeatureId()).orElse(null);
         if (feature == null) {
             throw new HttpClientException("Feature not found by id");
+        }
+        ApiConfig config = getConfig(request);
+
+        if (!isValidHttpMethod(config.getMethod())) {
+            throw new HttpClientException("Invalid HTTP method in extracted content");
         }
         Api api = new Api();
         api.setId(UUID.randomUUID());
@@ -41,14 +67,85 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
         api.setPath(config.getUrl().strip());
         api.setCreatedAt(Instant.now());
 
+        apiRepository.save(api);
+        saveApiParameters(api, config);
+        saveApiResults(api, config);
+        log.debug("Finished saving api data for feature={} and chat={}", request.getFeatureId(), request.getChatId());
+
         try {
             dynamicRouteService.registerUrl(api.getPath(), RequestMethod.valueOf(api.getMethod()));
-
+            log.info("Registered new api with path {} and method {}", api.getPath(), api.getMethod());
         } catch (NoSuchMethodException e) {
             throw new HttpClientException(e.getMessage());
         }
-        apiRepository.save(api);
+        return new ApiGenerationResponse(
+                request.getChatId(),
+                request.getFeatureId(),
+                api.getId(),
+                api.getPath(),
+                api.getMethod(),
+                config.getParameters(),
+                config.getResults()
+        );
+    }
 
+    private ApiConfig getConfig(ApiGenerationRequest request) {
+        Chat chat = chatRepository.findById(request.getChatId()).orElse(null);
+        if (chat == null) {
+            throw new HttpClientException(String.format("Chat with id %s does not exist", request.getChatId()));
+        }
+        Message message = messageRepository.findFirstByChat_IdAndExtractedContentNotNullOrderByNumberDesc(chat.getId())
+                .orElse(null);
+        if (message == null) {
+            throw new HttpClientException("Failed to find chat message with non-empty extracted content");
+        }
+
+        ApiConfig config = parseConfig(message.getExtractedContent()).orElse(null);
+        if (config == null) {
+            throw new HttpClientException(String.format("Extracted content from last message with id=%s " +
+                    "with chatId=%s cannot ba parsed as ApiConfig", message.getId(), message.getChat().getId()));
+        }
+        return config;
+    }
+
+    private void saveApiParameters(Api api, ApiConfig config) {
+        if (config.getParameters() == null || config.getParameters().isEmpty()) {
+            return;
+        }
+        List<ApiParameter> apiParameters = config.getParameters().stream()
+                .map(param -> param.strip().toLowerCase())
+                .map(param -> {
+                    ApiParameter apiParameter = new ApiParameter();
+                    apiParameter.setId(UUID.randomUUID());
+                    apiParameter.setApi(api);
+                    apiParameter.setName(param);
+                    apiParameter.setCreatedAt(Instant.now());
+
+                    return apiParameter;
+                })
+                .collect(Collectors.toList());
+
+        apiParameterRepository.saveAll(apiParameters);
+    }
+
+    private void saveApiResults(Api api, ApiConfig config) {
+        if (config.getResults() == null || config.getResults().isEmpty()) {
+            return;
+        }
+        List<ApiResult> apiResults = config.getResults().stream()
+                .map(result -> result.strip().toLowerCase())
+                .map(result -> {
+                    ApiResult apiResult = new ApiResult();
+                    apiResult.setId(UUID.randomUUID());
+                    apiResult.setApi(api);
+                    apiResult.setName(result);
+                    apiResult.setCreatedAt(Instant.now());
+
+                    return apiResult;
+                })
+                .collect(Collectors.toList());
+
+        apiResultRepository.saveAll(apiResults);
     }
 
     private boolean isValidHttpMethod(String httpMethod) {
@@ -56,8 +153,20 @@ public class ApiGenerationServiceImpl implements ApiGenerationService {
             RequestMethod.valueOf(httpMethod.strip().toUpperCase());
 
         } catch (IllegalArgumentException e) {
+            log.debug("Provided httpMethod={} is not valid", httpMethod);
             return false;
         }
         return true;
+    }
+
+    private Optional<ApiConfig> parseConfig(String extractedContent) {
+        try {
+            ApiConfig config = objectMapper.readValue(extractedContent, Config.class).getConfig();
+            return Optional.of(config);
+
+        } catch (JsonProcessingException e) {
+            log.debug("Failed to parse ApiConfig from extracted content: {}", extractedContent);
+            return Optional.empty();
+        }
     }
 }

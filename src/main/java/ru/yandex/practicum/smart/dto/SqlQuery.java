@@ -5,6 +5,6 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public class FeatureRequest {
-    private final String name;
+public class SqlQuery {
+    private final String query;
 }

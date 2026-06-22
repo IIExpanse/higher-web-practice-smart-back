@@ -28,11 +28,6 @@ public class FeatureServiceImpl implements FeatureService {
         Feature savedFeature = featureRepository.save(feature);
         log.info("Feature saved with id {}", savedFeature.getId());
 
-        FeatureResponse response = new FeatureResponse();
-        response.setId(savedFeature.getId());
-        response.setName(savedFeature.getName());
-        response.setCreatedAt(savedFeature.getCreatedAt());
-
-        return response;
+        return new FeatureResponse(savedFeature.getId(), savedFeature.getName(), savedFeature.getCreatedAt());
     }
 }

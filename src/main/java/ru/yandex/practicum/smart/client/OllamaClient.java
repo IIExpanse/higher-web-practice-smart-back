@@ -19,12 +19,14 @@ import java.util.List;
 public class OllamaClient {
     @Value("${smart-back.ollama.api.url}")
     private String ollamaApiUtl;
+    @Value("${smart-back.ollama.api.model}")
+    private String ollamaLlmModel;
 
     private final RestTemplate restTemplate;
 
     public OllamaResponse sendMessage(List<OllamaMessage> messages) {
         OllamaRequest request = new OllamaRequest(
-                "gemma3:4b",
+                ollamaLlmModel,
                 messages,
                 false,
                 true

@@ -1,6 +1,8 @@
 package ru.yandex.practicum.smart.dao;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -10,10 +12,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DynamicJdbcDao {
-    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate parameterJdbcTemplate;
 
     /**
      * Выполняет динамический выборку из БД.
@@ -27,23 +31,21 @@ public class DynamicJdbcDao {
             List<String> outputFields,
             Map<String, String> inputFilters) {
 
-        // 1. Формируем список выбираемых полей (Защита от SQL-инъекций: поля должны быть проверенными строками)
-
-        // 2. Динамически строим блок WHERE на основе переданных ключей inputFilters
-
-        // 3. Преобразуем inputFilters в Map<String, Object> для NamedParameterJdbcTemplate
         Map<String, Object> paramSource = new HashMap<>(inputFilters);
 
-        // 4. Выполняем запрос. Spring автоматически мапит строку в Map<String, Object>
-        List<Map<String, Object>> rawResultList = jdbcTemplate.queryForList(query, paramSource);
+        log.debug("Executing dynamic query: {}", query);
+        List<Map<String, Object>> rawResultList = parameterJdbcTemplate.queryForList(query, paramSource);
 
-        // 5. Конвертируем выходные значения из Object в String, чтобы получить строго Map<String, String>
         return rawResultList.stream()
                 .map(row -> convertRowValuesToString(row, Set.copyOf(outputFields)))
                 .collect(Collectors.toList());
     }
 
-    // Вспомогательный метод для приведения всех типов данных БД к String
+    public void executeModifyingQuery(String sql) {
+        log.debug("Executing modifying query");
+        jdbcTemplate.execute(sql);
+    }
+
     private Map<String, String> convertRowValuesToString(Map<String, Object> row, Set<String> outputFields) {
         return row.entrySet().stream()
                 .filter(entry -> outputFields.contains(entry.getKey()))
